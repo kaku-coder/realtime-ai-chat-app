@@ -164,4 +164,5 @@ chat-with-ai-project/
 
 ## 📝 License
 
-This project is licensed under the ISC License. Created for practice & learning full-stack AI and Socket.io applications.
+This project is open-source and available under the [MIT License](LICENSE).
+
