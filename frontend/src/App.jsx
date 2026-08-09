@@ -107,6 +107,8 @@ function chatReducer(state, action) {
   }
 }
 
+const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000';
+
 const App = () => {
   const [state, dispatch] = useReducer(chatReducer, initialState);
   const messagesEndRef = useRef(null);
@@ -134,7 +136,7 @@ const App = () => {
   // Fetch all chat session objects from backend on load
   const fetchSessions = useCallback(async () => {
     try {
-      const res = await axios.get('http://localhost:3000/api/chat/history');
+      const res = await axios.get(`${API_BASE_URL}/api/chat/history`);
       if (res.data.success) {
         dispatch({ type: 'SET_SESSIONS', payload: res.data.data });
       }
@@ -191,7 +193,7 @@ const App = () => {
 
     try {
       // 2. Call backend API with prompt & optional chatId
-      const response = await axios.post('http://localhost:3000/api/chat/send', {
+      const response = await axios.post(`${API_BASE_URL}/api/chat/send`, {
         message: userPrompt,
         chatId: state.activeSessionId && !state.activeSessionId.startsWith('temp-') ? state.activeSessionId : null,
       });
