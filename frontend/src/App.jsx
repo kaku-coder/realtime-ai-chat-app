@@ -133,6 +133,7 @@ const App = () => {
   const [state, dispatch] = useReducer(chatReducer, initialState);
   const [editingId, setEditingId] = useState(null);
   const [editTitleInput, setEditTitleInput] = useState('');
+  const [deleteTargetId, setDeleteTargetId] = useState(null);
   const messagesEndRef = useRef(null);
 
   // Auto-scroll chat window to bottom
@@ -227,23 +228,29 @@ const App = () => {
     setEditingId(null);
   }, [editTitleInput]);
 
-  // Delete Chat Session Handler
-  const handleDeleteSession = useCallback(async (sessionId, e) => {
+  // Open Delete Confirmation Modal Handler
+  const handleDeleteClick = useCallback((sessionId, e) => {
     e.stopPropagation();
-    if (!window.confirm('Do you want to delete the history or not?')) return;
+    setDeleteTargetId(sessionId);
+  }, []);
+
+  // Confirm Delete Action Handler
+  const confirmDelete = useCallback(async () => {
+    if (!deleteTargetId) return;
 
     try {
-      const res = await axios.delete(`${API_BASE_URL}/api/chat/${sessionId}`);
+      const res = await axios.delete(`${API_BASE_URL}/api/chat/${deleteTargetId}`);
       if (res.data.success) {
         dispatch({
           type: 'DELETE_SESSION',
-          payload: { id: sessionId },
+          payload: { id: deleteTargetId },
         });
       }
     } catch (err) {
       console.error('Error deleting chat session:', err);
     }
-  }, []);
+    setDeleteTargetId(null);
+  }, [deleteTargetId]);
 
   // Send Message Handler
   const sendMessage = useCallback(async () => {
@@ -291,6 +298,35 @@ const App = () => {
   return (
     <div className="flex h-screen w-screen overflow-hidden bg-[#f4f5f8] relative">
       
+      {/* Custom Delete Confirmation Modal */}
+      {deleteTargetId && (
+        <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/60 backdrop-blur-xs p-4">
+          <div className="bg-[#1c1c21] border border-gray-800 rounded-2xl p-5 sm:p-6 max-w-sm w-full text-center shadow-2xl space-y-4">
+            <div className="w-12 h-12 rounded-full bg-red-500/10 text-red-500 mx-auto flex items-center justify-center">
+              <Trash2 className="w-6 h-6" />
+            </div>
+            <div className="space-y-1">
+              <h3 className="text-base font-semibold text-white">Delete Chat</h3>
+              <p className="text-xs sm:text-sm text-gray-400">Do you want to delete the history or not?</p>
+            </div>
+            <div className="flex items-center gap-3 pt-2">
+              <button
+                onClick={() => setDeleteTargetId(null)}
+                className="flex-1 px-4 py-2.5 rounded-xl bg-[#2a2a30] hover:bg-[#32323a] text-gray-200 text-xs sm:text-sm font-medium transition cursor-pointer"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={confirmDelete}
+                className="flex-1 px-4 py-2.5 rounded-xl bg-red-600 hover:bg-red-700 text-white text-xs sm:text-sm font-medium shadow-md transition cursor-pointer"
+              >
+                Delete
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Mobile Backdrop Overlay */}
       {state.sidebarOpen && (
         <div 
@@ -399,7 +435,7 @@ const App = () => {
                             <Pencil className="w-3.5 h-3.5" />
                           </button>
                           <button
-                            onClick={(e) => handleDeleteSession(session._id, e)}
+                            onClick={(e) => handleDeleteClick(session._id, e)}
                             className="p-1 hover:text-red-400 text-gray-400 hover:bg-gray-700/60 rounded transition"
                             title="Delete Chat"
                           >
