@@ -1,4 +1,5 @@
 import Groq from "groq-sdk";
+import { searchWeb } from "../tools/ai.tools.js";
 
 /**
  * Groq AI Service
@@ -11,12 +12,21 @@ export const generateContent = async (prompt) => {
         }
 
         const groq = new Groq({ apiKey: process.env.GROQ_API_KEY });
+        const webContext = await searchWeb(prompt)
 
-        const chatCompletion = await groq.chat.completions.create({
-            messages: [{ role: "user", content: prompt }],
+const chatCompletion = await groq.chat.completions.create({
+            messages: [
+                {
+                    role: "system",
+                    content: `You are a helpful AI assistant. Use the following real-time web search results to answer the user's question accurately:\n\n${webContext}`,
+                },
+                {
+                    role: "user",
+                    content: prompt,
+                },
+            ],
             model: "llama-3.3-70b-versatile",
         });
-
 
         return chatCompletion.choices[0]?.message?.content || "";
     } catch (error) {
