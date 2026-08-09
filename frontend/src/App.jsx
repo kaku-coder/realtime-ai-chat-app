@@ -5,46 +5,20 @@ import React, {
   useCallback, 
   useMemo 
 } from 'react';
-import { X, Mic, ArrowUp, SquarePen, MessageSquare, Menu, Zap } from 'lucide-react';
+import { X, Mic, ArrowUp, SquarePen, MessageSquare, Menu } from 'lucide-react';
 import axios from 'axios';
 
-// Custom Purple-Blue Gradient Lightning Logo Component
+// Custom MOGO 3D Robot Avatar Component
 const AILogo = ({ size = "md" }) => {
   const sizeClasses = {
-    sm: "w-6 h-6 rounded-lg",
-    md: "w-8 h-8 rounded-xl",
-    lg: "w-12 h-12 rounded-2xl",
-  };
-
-  const iconSizes = {
-    sm: "w-3.5 h-3.5",
-    md: "w-4.5 h-4.5",
-    lg: "w-6 h-6",
+    sm: "w-7 h-7 sm:w-8 sm:h-8 rounded-full",
+    md: "w-8 h-8 sm:w-9 sm:h-9 rounded-full",
+    lg: "w-20 h-20 sm:w-24 sm:h-24 rounded-full",
   };
 
   return (
-    <div className={`${sizeClasses[size]} bg-[#1e1e24] flex items-center justify-center shadow-md flex-shrink-0 border border-gray-800/80`}>
-      <svg 
-        className={iconSizes[size]} 
-        viewBox="0 0 24 24" 
-        fill="none" 
-        xmlns="http://www.w3.org/2000/svg"
-      >
-        <defs>
-          <linearGradient id="purpleBlueZap" x1="0%" y1="0%" x2="100%" y2="100%">
-            <stop offset="0%" stopColor="#C084FC" />
-            <stop offset="40%" stopColor="#9333EA" />
-            <stop offset="100%" stopColor="#3B82F6" />
-          </linearGradient>
-        </defs>
-        <path 
-          d="M13 2L3 14H12L11 22L21 10H12L13 2Z" 
-          fill="url(#purpleBlueZap)"
-          stroke="url(#purpleBlueZap)"
-          strokeWidth="1.5"
-          strokeLinejoin="round" 
-        />
-      </svg>
+    <div className={`${sizeClasses[size]} overflow-hidden bg-[#18181b] border border-gray-700/80 shadow-md flex-shrink-0 flex items-center justify-center mb-0.5`}>
+      <img src="/MOGO.png" alt="MOGO AI" className="w-full h-full object-cover scale-110" />
     </div>
   );
 };
@@ -266,7 +240,7 @@ const App = () => {
         <div className="flex items-center justify-between md:hidden mb-3 pb-2 border-b border-gray-800">
           <div className="flex items-center gap-2">
             <AILogo size="sm" />
-            <span className="text-sm font-semibold text-gray-200">Chat History</span>
+            <span className="text-sm font-semibold text-gray-200">MOGO Chat History</span>
           </div>
           <button 
             onClick={() => dispatch({ type: 'CLOSE_SIDEBAR' })}
@@ -329,7 +303,7 @@ const App = () => {
       {/* ================= MAIN CHAT AREA (RIGHT) ================= */}
       <main className="flex-1 flex items-center justify-center p-3 sm:p-6 h-full overflow-hidden">
         
-        {/* Ask Super AI Modal Card */}
+        {/* Ask MOGO AI Modal Card */}
         <div className="w-full max-w-[680px] bg-white rounded-2xl sm:rounded-[32px] p-4 sm:p-6 md:p-8 shadow-[0_12px_45px_rgba(0,0,0,0.06)] border border-gray-100/80 flex flex-col justify-between h-[92vh] max-h-[720px] md:h-[680px]">
           
           {/* Header */}
@@ -344,11 +318,11 @@ const App = () => {
                 <Menu className="w-5 h-5 stroke-[2]" />
               </button>
 
-              {/* Purple-Blue Zap Logo */}
+              {/* MOGO 3D Avatar Logo */}
               <AILogo size="sm" />
 
               <h2 className="text-[16px] sm:text-[17px] font-semibold text-[#1c1c1e] tracking-tight">
-                Ask Super AI
+                MOGO AI
               </h2>
             </div>
 
@@ -378,7 +352,7 @@ const App = () => {
                   {/* AI Message Bubble OR Typing Dots Indicator */}
                   {msg.aiResponse ? (
                     <div className="flex items-end gap-2.5 sm:gap-3">
-                      {/* Purple-Blue Gradient Lightning Logo */}
+                      {/* MOGO Avatar */}
                       <AILogo size="md" />
                       
                       <div className="bg-[#f2f3f6] text-[#1c1c1e] px-4 py-3.5 sm:px-5 sm:py-4 rounded-[20px] sm:rounded-[22px] rounded-bl-[6px] max-w-[88%] sm:max-w-[85%] text-[14px] sm:text-[15px] leading-normal font-normal">
@@ -386,13 +360,13 @@ const App = () => {
                       </div>
                     </div>
                   ) : (
-                    /* Animated Typing Indicator Dots while waiting for AI */
+                    /* Animated Typing Indicator Dots while waiting for MOGO */
                     <div className="flex items-end gap-2.5 sm:gap-3">
                       <AILogo size="md" />
                       <div className="bg-[#f2f3f6] text-gray-500 px-4 py-3.5 sm:px-5 sm:py-4 rounded-[20px] sm:rounded-[22px] rounded-bl-[6px] text-[14px] sm:text-[15px] flex items-center gap-1.5">
-                        <span className="w-2 h-2 bg-purple-500 rounded-full animate-bounce"></span>
-                        <span className="w-2 h-2 bg-purple-500 rounded-full animate-bounce [animation-delay:0.2s]"></span>
-                        <span className="w-2 h-2 bg-blue-500 rounded-full animate-bounce [animation-delay:0.4s]"></span>
+                        <span className="w-2 h-2 bg-amber-400 rounded-full animate-bounce"></span>
+                        <span className="w-2 h-2 bg-amber-400 rounded-full animate-bounce [animation-delay:0.2s]"></span>
+                        <span className="w-2 h-2 bg-amber-400 rounded-full animate-bounce [animation-delay:0.4s]"></span>
                       </div>
                     </div>
                   )}
@@ -402,7 +376,10 @@ const App = () => {
               /* Empty state for New Chat */
               <div className="h-full flex flex-col items-center justify-center text-gray-400 space-y-3">
                 <AILogo size="lg" />
-                <p className="text-xs sm:text-sm font-medium text-gray-500">Start a new conversation</p>
+                <div className="text-center">
+                  <h3 className="text-base sm:text-lg font-semibold text-gray-800">Hi, my name is MOGO</h3>
+                  <p className="text-xs sm:text-sm font-medium text-gray-500 mt-1">How can I help you today?</p>
+                </div>
               </div>
             )}
             <div ref={messagesEndRef} />
@@ -414,7 +391,7 @@ const App = () => {
             <div className="flex-1 flex items-center bg-[#f2f3f6] rounded-full px-4 py-3 sm:px-5 sm:py-3.5 gap-2.5 focus-within:ring-2 focus-within:ring-purple-400/40 transition">
               <input
                 type="text"
-                placeholder="Ask Super AI anything..."
+                placeholder="Ask MOGO anything..."
                 className="w-full bg-transparent outline-none text-[#1c1c1e] placeholder-[#8e8e93] text-[14px] sm:text-[15px]"
                 value={state.input}
                 onChange={handleInputChange}
