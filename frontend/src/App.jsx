@@ -5,8 +5,49 @@ import React, {
   useCallback, 
   useMemo 
 } from 'react';
-import { X, Mic, ArrowUp, SquarePen, MessageSquare, Menu } from 'lucide-react';
+import { X, Mic, ArrowUp, SquarePen, MessageSquare, Menu, Zap } from 'lucide-react';
 import axios from 'axios';
+
+// Custom Purple-Blue Gradient Lightning Logo Component
+const AILogo = ({ size = "md" }) => {
+  const sizeClasses = {
+    sm: "w-6 h-6 rounded-lg",
+    md: "w-8 h-8 rounded-xl",
+    lg: "w-12 h-12 rounded-2xl",
+  };
+
+  const iconSizes = {
+    sm: "w-3.5 h-3.5",
+    md: "w-4.5 h-4.5",
+    lg: "w-6 h-6",
+  };
+
+  return (
+    <div className={`${sizeClasses[size]} bg-[#1e1e24] flex items-center justify-center shadow-md flex-shrink-0 border border-gray-800/80`}>
+      <svg 
+        className={iconSizes[size]} 
+        viewBox="0 0 24 24" 
+        fill="none" 
+        xmlns="http://www.w3.org/2000/svg"
+      >
+        <defs>
+          <linearGradient id="purpleBlueZap" x1="0%" y1="0%" x2="100%" y2="100%">
+            <stop offset="0%" stopColor="#C084FC" />
+            <stop offset="40%" stopColor="#9333EA" />
+            <stop offset="100%" stopColor="#3B82F6" />
+          </linearGradient>
+        </defs>
+        <path 
+          d="M13 2L3 14H12L11 22L21 10H12L13 2Z" 
+          fill="url(#purpleBlueZap)"
+          stroke="url(#purpleBlueZap)"
+          strokeWidth="1.5"
+          strokeLinejoin="round" 
+        />
+      </svg>
+    </div>
+  );
+};
 
 // ================= REDUCER DEFINITION =================
 const initialState = {
@@ -223,7 +264,10 @@ const App = () => {
         
         {/* Mobile Close Button & Header */}
         <div className="flex items-center justify-between md:hidden mb-3 pb-2 border-b border-gray-800">
-          <span className="text-sm font-semibold text-gray-200">Chat History</span>
+          <div className="flex items-center gap-2">
+            <AILogo size="sm" />
+            <span className="text-sm font-semibold text-gray-200">Chat History</span>
+          </div>
           <button 
             onClick={() => dispatch({ type: 'CLOSE_SIDEBAR' })}
             className="p-1 text-gray-400 hover:text-white"
@@ -290,7 +334,7 @@ const App = () => {
           
           {/* Header */}
           <div className="flex items-center justify-between pb-2 border-b border-gray-50 md:border-none">
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-2.5">
               {/* Mobile Hamburger Menu Toggle */}
               <button 
                 className="md:hidden text-[#1c1c1e] hover:bg-gray-100 p-1.5 rounded-lg transition"
@@ -299,6 +343,10 @@ const App = () => {
               >
                 <Menu className="w-5 h-5 stroke-[2]" />
               </button>
+
+              {/* Purple-Blue Zap Logo */}
+              <AILogo size="sm" />
+
               <h2 className="text-[16px] sm:text-[17px] font-semibold text-[#1c1c1e] tracking-tight">
                 Ask Super AI
               </h2>
@@ -330,8 +378,8 @@ const App = () => {
                   {/* AI Message Bubble OR Typing Dots Indicator */}
                   {msg.aiResponse ? (
                     <div className="flex items-end gap-2.5 sm:gap-3">
-                      {/* Glossy Blue Gradient Sphere Avatar */}
-                      <div className="w-7 h-7 sm:w-8 sm:h-8 rounded-full bg-gradient-to-tr from-[#1d4ed8] via-[#3b82f6] to-[#93c5fd] shadow-sm flex-shrink-0 mb-1" />
+                      {/* Purple-Blue Gradient Lightning Logo */}
+                      <AILogo size="md" />
                       
                       <div className="bg-[#f2f3f6] text-[#1c1c1e] px-4 py-3.5 sm:px-5 sm:py-4 rounded-[20px] sm:rounded-[22px] rounded-bl-[6px] max-w-[88%] sm:max-w-[85%] text-[14px] sm:text-[15px] leading-normal font-normal">
                         {msg.aiResponse}
@@ -340,10 +388,10 @@ const App = () => {
                   ) : (
                     /* Animated Typing Indicator Dots while waiting for AI */
                     <div className="flex items-end gap-2.5 sm:gap-3">
-                      <div className="w-7 h-7 sm:w-8 sm:h-8 rounded-full bg-gradient-to-tr from-[#1d4ed8] via-[#3b82f6] to-[#93c5fd] shadow-sm flex-shrink-0 mb-1 animate-pulse" />
+                      <AILogo size="md" />
                       <div className="bg-[#f2f3f6] text-gray-500 px-4 py-3.5 sm:px-5 sm:py-4 rounded-[20px] sm:rounded-[22px] rounded-bl-[6px] text-[14px] sm:text-[15px] flex items-center gap-1.5">
-                        <span className="w-2 h-2 bg-blue-500 rounded-full animate-bounce"></span>
-                        <span className="w-2 h-2 bg-blue-500 rounded-full animate-bounce [animation-delay:0.2s]"></span>
+                        <span className="w-2 h-2 bg-purple-500 rounded-full animate-bounce"></span>
+                        <span className="w-2 h-2 bg-purple-500 rounded-full animate-bounce [animation-delay:0.2s]"></span>
                         <span className="w-2 h-2 bg-blue-500 rounded-full animate-bounce [animation-delay:0.4s]"></span>
                       </div>
                     </div>
@@ -352,10 +400,8 @@ const App = () => {
               ))
             ) : (
               /* Empty state for New Chat */
-              <div className="h-full flex flex-col items-center justify-center text-gray-400 space-y-2">
-                <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-full bg-gradient-to-tr from-[#1d4ed8] via-[#3b82f6] to-[#93c5fd] shadow-md flex items-center justify-center text-white text-base sm:text-lg font-bold">
-                  AI
-                </div>
+              <div className="h-full flex flex-col items-center justify-center text-gray-400 space-y-3">
+                <AILogo size="lg" />
                 <p className="text-xs sm:text-sm font-medium text-gray-500">Start a new conversation</p>
               </div>
             )}
@@ -383,7 +429,7 @@ const App = () => {
             <button 
               className={`w-10 h-10 sm:w-12 sm:h-12 rounded-full flex items-center justify-center transition flex-shrink-0 cursor-pointer ${
                 state.input.trim() && !state.loading
-                  ? 'bg-blue-600 hover:bg-blue-700 text-white shadow-md'
+                  ? 'bg-purple-600 hover:bg-purple-700 text-white shadow-md'
                   : 'bg-[#f2f3f6] hover:bg-[#e4e5ea] text-[#1c1c1e]'
               }`} 
               onClick={sendMessage}
