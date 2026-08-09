@@ -22,7 +22,8 @@ import {
   Mic, 
   FileText, 
   Code, 
-  Sparkles 
+  Sparkles,
+  FileCode
 } from 'lucide-react';
 import axios from 'axios';
 
@@ -177,6 +178,13 @@ const App = () => {
     return localStorage.getItem('mogo_theme') === 'dark';
   });
 
+  // Toolbar Features State
+  const [attachedFile, setAttachedFile] = useState(null);
+  const [webSearchEnabled, setWebSearchEnabled] = useState(true);
+  const [isListening, setIsListening] = useState(false);
+
+  const fileInputRef = useRef(null);
+  const recognitionRef = useRef(null);
   const messagesEndRef = useRef(null);
 
   // Toggle Dark / Light Theme
@@ -240,6 +248,7 @@ const App = () => {
   // New Chat Handler
   const handleNewChat = useCallback(() => {
     dispatch({ type: 'START_NEW_CHAT' });
+    setAttachedFile(null);
   }, []);
 
   // Input change handler
@@ -304,24 +313,102 @@ const App = () => {
     setDeleteTargetId(null);
   }, [deleteTargetId]);
 
+  // ================= TOOLBAR HANDLERS =================
+  // 1. Handle File Upload / Attachment
+  const handleFileClick = () => {
+    fileInputRef.current?.click();
+  };
+
+  const handleFileChange = (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    const reader = new FileReader();
+    reader.onload = (event) => {
+      setAttachedFile({
+        name: file.name,
+        size: (file.size / 1024).toFixed(1) + ' KB',
+        content: event.target?.result || '',
+      });
+    };
+
+    if (file.type.startsWith('image/')) {
+      reader.readAsDataURL(file);
+    } else {
+      reader.readAsText(file);
+    }
+    // Reset file input
+    e.target.value = '';
+  };
+
+  // 2. Handle Voice Recognition Input (Speech to Text)
+  const toggleVoiceInput = () => {
+    if (isListening) {
+      recognitionRef.current?.stop();
+      setIsListening(false);
+      return;
+    }
+
+    const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+    if (!SpeechRecognition) {
+      alert("Speech recognition is not supported in this browser. Please try Google Chrome or MS Edge.");
+      return;
+    }
+
+    const recognition = new SpeechRecognition();
+    recognition.continuous = false;
+    recognition.interimResults = true;
+    recognition.lang = 'en-US';
+
+    recognition.onstart = () => setIsListening(true);
+    recognition.onend = () => setIsListening(false);
+    recognition.onerror = (err) => {
+      console.error("Speech Recognition Error:", err);
+      setIsListening(false);
+    };
+
+    recognition.onresult = (event) => {
+      const transcript = Array.from(event.results)
+        .map((result) => result[0])
+        .map((result) => result.transcript)
+        .join('');
+
+      dispatch({ type: 'SET_INPUT', payload: transcript });
+    };
+
+    recognition.start();
+    recognitionRef.current = recognition;
+  };
+
   // Send Message Handler
   const sendMessage = useCallback(async (customPrompt = null) => {
-    const promptToSend = typeof customPrompt === 'string' ? customPrompt : state.input.trim();
-    if (!promptToSend || state.loading) return;
+    let basePrompt = typeof customPrompt === 'string' ? customPrompt : state.input.trim();
+    if ((!basePrompt && !attachedFile) || state.loading) return;
+
+    // Combine attached file info with prompt if attached
+    let finalPrompt = basePrompt;
+    if (attachedFile) {
+      finalPrompt = attachedFile.content && typeof attachedFile.content === 'string' && !attachedFile.content.startsWith('data:')
+        ? `[Attached File: ${attachedFile.name}]\n${attachedFile.content}\n\nUser Question: ${basePrompt || 'Please review this file.'}`
+        : `[Attached File: ${attachedFile.name}]\nUser Question: ${basePrompt || 'Please analyze this file.'}`;
+    }
 
     const tempId = 'temp-' + Date.now();
-    const pendingMsg = { _id: Date.now(), userMessage: promptToSend, aiResponse: null };
+    const pendingMsg = { _id: Date.now(), userMessage: basePrompt || `Attached ${attachedFile?.name}`, aiResponse: null };
+
+    // Clear attached file state
+    setAttachedFile(null);
 
     // 1. Dispatch optimistic UI update
     dispatch({
       type: 'OPTIMISTIC_ADD_MESSAGE',
-      payload: { tempId, pendingMsg, userPrompt: promptToSend },
+      payload: { tempId, pendingMsg, userPrompt: finalPrompt },
     });
 
     try {
       // 2. Call backend API with prompt & optional chatId
       const response = await axios.post(`${API_BASE_URL}/api/chat/send`, {
-        message: promptToSend,
+        message: finalPrompt,
         chatId: state.activeSessionId && !state.activeSessionId.startsWith('temp-') ? state.activeSessionId : null,
       });
 
@@ -335,7 +422,7 @@ const App = () => {
       console.error('Error sending message:', error);
       dispatch({ type: 'RESOLVE_MESSAGE_ERROR' });
     }
-  }, [state.input, state.loading, state.activeSessionId]);
+  }, [state.input, state.loading, state.activeSessionId, attachedFile]);
 
   const handleKeyDown = useCallback(
     (e) => {
@@ -352,6 +439,15 @@ const App = () => {
       darkMode ? 'bg-[#0a0a0f] text-gray-100' : 'bg-[#f5f4f9] text-gray-900'
     }`}>
       
+      {/* Hidden File Input for Paperclip */}
+      <input 
+        type="file" 
+        ref={fileInputRef} 
+        onChange={handleFileChange} 
+        className="hidden" 
+        accept="text/*,.js,.jsx,.ts,.tsx,.json,.py,.java,.cpp,.html,.css,.md,image/*"
+      />
+
       {/* Custom Delete Confirmation Modal */}
       {deleteTargetId && (
         <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/65 backdrop-blur-xs p-4">
@@ -677,13 +773,29 @@ const App = () => {
                 : 'bg-[#f8f7fc] border-purple-100/80 focus-within:border-purple-400/60 shadow-sm'
             }`}>
               
+              {/* Attached File Pill Badge */}
+              {attachedFile && (
+                <div className="flex items-center gap-2 bg-purple-500/15 border border-purple-500/30 px-3 py-1.5 rounded-xl w-fit text-xs text-purple-300 mb-1">
+                  <FileCode className="w-4 h-4 text-purple-400 flex-shrink-0" />
+                  <span className="font-medium truncate max-w-[200px]">{attachedFile.name}</span>
+                  <span className="text-[10px] text-gray-400">({attachedFile.size})</span>
+                  <button 
+                    onClick={() => setAttachedFile(null)} 
+                    className="p-0.5 hover:text-white text-gray-400 transition ml-1"
+                    title="Remove attachment"
+                  >
+                    <X className="w-3.5 h-3.5" />
+                  </button>
+                </div>
+              )}
+
               {/* Text Input Area */}
               <input
                 type="text"
-                placeholder="Ask MOGO anything..."
+                placeholder={isListening ? "Listening to your voice..." : "Ask MOGO anything..."}
                 className={`w-full bg-transparent outline-none text-[14px] sm:text-[15px] px-1 ${
                   darkMode ? 'text-white placeholder-[#787694]' : 'text-gray-900 placeholder-[#9b98b8]'
-                }`}
+                } ${isListening ? 'text-purple-400 font-medium' : ''}`}
                 value={state.input}
                 onChange={handleInputChange}
                 onKeyDown={handleKeyDown}
@@ -692,49 +804,68 @@ const App = () => {
               {/* Bottom Actions Toolbar */}
               <div className="flex items-center justify-between pt-1">
                 
-                {/* Left Side Action Icons (Attachment & Web Search) */}
+                {/* Left Side Action Icons (Attachment & Web Search Toggle) */}
                 <div className="flex items-center gap-1.5 sm:gap-2">
+                  {/* Paperclip File Upload Button */}
                   <button 
                     type="button"
-                    className={`p-1.5 sm:p-2 rounded-lg transition cursor-pointer ${
-                      darkMode ? 'text-gray-400 hover:text-gray-200 hover:bg-gray-800' : 'text-gray-500 hover:text-purple-600 hover:bg-purple-100/60'
+                    onClick={handleFileClick}
+                    className={`p-1.5 sm:p-2 rounded-lg transition cursor-pointer relative ${
+                      attachedFile 
+                        ? 'text-purple-400 bg-purple-500/15 border border-purple-500/30' 
+                        : darkMode 
+                          ? 'text-gray-400 hover:text-gray-200 hover:bg-gray-800' 
+                          : 'text-gray-500 hover:text-purple-600 hover:bg-purple-100/60'
                     }`}
-                    title="Attach File"
+                    title="Attach File (Code, Text, Image)"
                   >
                     <Paperclip className="w-4 h-4 sm:w-4.5 sm:h-4.5" />
                   </button>
 
+                  {/* Globe Live Web Search Toggle Button */}
                   <button 
                     type="button"
+                    onClick={() => setWebSearchEnabled((prev) => !prev)}
                     className={`p-1.5 sm:p-2 rounded-lg transition cursor-pointer flex items-center gap-1 text-xs font-medium ${
-                      darkMode ? 'text-gray-400 hover:text-gray-200 hover:bg-gray-800' : 'text-gray-500 hover:text-purple-600 hover:bg-purple-100/60'
+                      webSearchEnabled 
+                        ? 'text-purple-400 bg-purple-500/15 border border-purple-500/30' 
+                        : darkMode 
+                          ? 'text-gray-500 hover:text-gray-300 hover:bg-gray-800' 
+                          : 'text-gray-400 hover:text-purple-600 hover:bg-purple-100/60'
                     }`}
-                    title="Live Web Search Enabled"
+                    title={webSearchEnabled ? "Live Web Search: ENABLED" : "Live Web Search: DISABLED"}
                   >
-                    <Globe className="w-4 h-4 sm:w-4.5 sm:h-4.5 text-purple-500" />
+                    <Globe className={`w-4 h-4 sm:w-4.5 sm:h-4.5 ${webSearchEnabled ? 'text-purple-400' : 'text-gray-500'}`} />
                   </button>
                 </div>
 
-                {/* Right Side Actions (Mic & Circular Purple Send Button) */}
+                {/* Right Side Actions (Mic Voice Input & Circular Purple Send Button) */}
                 <div className="flex items-center gap-2">
+                  {/* Speech to Text Mic Button */}
                   <button 
                     type="button"
+                    onClick={toggleVoiceInput}
                     className={`p-1.5 sm:p-2 rounded-lg transition cursor-pointer ${
-                      darkMode ? 'text-gray-400 hover:text-gray-200 hover:bg-gray-800' : 'text-gray-500 hover:text-purple-600 hover:bg-purple-100/60'
+                      isListening 
+                        ? 'text-red-500 bg-red-500/15 border border-red-500/30 animate-pulse' 
+                        : darkMode 
+                          ? 'text-gray-400 hover:text-gray-200 hover:bg-gray-800' 
+                          : 'text-gray-500 hover:text-purple-600 hover:bg-purple-100/60'
                     }`}
-                    title="Voice Input"
+                    title={isListening ? "Listening... Click to stop" : "Voice Input (Speech-to-Text)"}
                   >
                     <Mic className="w-4 h-4 sm:w-4.5 sm:h-4.5" />
                   </button>
 
+                  {/* Circular Send Button */}
                   <button 
                     className={`w-9 h-9 sm:w-10 sm:h-10 rounded-full flex items-center justify-center transition-all flex-shrink-0 cursor-pointer ${
-                      state.input.trim() && !state.loading
+                      (state.input.trim() || attachedFile) && !state.loading
                         ? 'bg-gradient-to-r from-[#8b5cf6] to-[#7c3aed] text-white shadow-md shadow-purple-500/30 hover:scale-105 active:scale-95'
                         : 'bg-purple-500/20 text-purple-400 opacity-60'
                     }`} 
                     onClick={() => sendMessage()}
-                    disabled={!state.input.trim() || state.loading}
+                    disabled={(!state.input.trim() && !attachedFile) || state.loading}
                     title="Send Message"
                   >
                     <Send className="w-4 h-4 stroke-[2.2] translate-x-0.5 -translate-y-0.5" />
