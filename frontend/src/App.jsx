@@ -11,14 +11,14 @@ import axios from 'axios';
 // Custom MOGO 3D Robot Avatar Component
 const AILogo = ({ size = "md" }) => {
   const sizeClasses = {
-    sm: "w-7 h-7 sm:w-8 sm:h-8 rounded-full",
-    md: "w-8 h-8 sm:w-9 sm:h-9 rounded-full",
-    lg: "w-20 h-20 sm:w-24 sm:h-24 rounded-full",
+    sm: "w-6 h-6 sm:w-6.5 sm:h-6.5 rounded-lg p-0.5",
+    md: "w-7 h-7 sm:w-7.5 sm:h-7.5 rounded-xl p-0.5",
+    lg: "w-14 h-14 sm:w-16 sm:h-16 rounded-2xl p-1",
   };
 
   return (
-    <div className={`${sizeClasses[size]} overflow-hidden bg-[#18181b] border border-gray-700/80 shadow-md flex-shrink-0 flex items-center justify-center mb-0.5`}>
-      <img src="/MOGO.png" alt="MOGO AI" className="w-full h-full object-cover scale-110" />
+    <div className={`${sizeClasses[size]} overflow-hidden bg-[#18181b] border border-gray-700/60 shadow-sm flex-shrink-0 flex items-center justify-center mb-0.5`}>
+      <img src="/MOGO.png" alt="MOGO AI" className="w-full h-full object-contain drop-shadow-sm" />
     </div>
   );
 };
