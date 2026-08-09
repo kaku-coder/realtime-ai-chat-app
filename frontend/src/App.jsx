@@ -6,23 +6,62 @@ import React, {
   useMemo,
   useState
 } from 'react';
-import { X, ArrowUp, SquarePen, MessageSquare, Menu, Pencil, Trash2, Check } from 'lucide-react';
+import { 
+  X, 
+  SquarePen, 
+  MessageSquare, 
+  Menu, 
+  Pencil, 
+  Trash2, 
+  Check, 
+  Moon, 
+  Sun, 
+  Send, 
+  Paperclip, 
+  Globe, 
+  Mic, 
+  FileText, 
+  Code, 
+  Sparkles 
+} from 'lucide-react';
 import axios from 'axios';
 
 // Custom MOGO 3D Robot Avatar Component
 const AILogo = ({ size = "md" }) => {
   const sizeClasses = {
-    sm: "w-6 h-6 sm:w-6.5 sm:h-6.5 rounded-lg p-0.5",
-    md: "w-7 h-7 sm:w-7.5 sm:h-7.5 rounded-xl p-0.5",
-    lg: "w-14 h-14 sm:w-16 sm:h-16 rounded-2xl p-1",
+    sm: "w-6 h-6 sm:w-7 sm:h-7 rounded-lg p-0.5",
+    md: "w-7.5 h-7.5 sm:w-8 sm:h-8 rounded-xl p-0.5",
+    lg: "w-16 h-16 sm:w-20 sm:h-20 rounded-2xl p-1",
   };
 
   return (
-    <div className={`${sizeClasses[size]} overflow-hidden bg-[#18181b] border border-gray-700/60 shadow-sm flex-shrink-0 flex items-center justify-center mb-0.5`}>
+    <div className={`${sizeClasses[size]} overflow-hidden bg-[#18181b] border border-gray-700/60 shadow-md flex-shrink-0 flex items-center justify-center`}>
       <img src="/MOGO.png" alt="MOGO AI" className="w-full h-full object-contain drop-shadow-sm" />
     </div>
   );
 };
+
+// Suggested Prompt Pills Data
+const SUGGESTED_PROMPTS = [
+  { 
+    id: 1, 
+    icon: FileText, 
+    label: "Explain AI in simple terms", 
+    prompt: "Explain Artificial Intelligence in simple terms for a beginner" 
+  },
+  { 
+    id: 2, 
+    icon: Code, 
+    label: "Help me write code", 
+    prompt: "Help me write a clean React component using hooks" 
+  },
+  { 
+    id: 3, 
+    icon: Sparkles, 
+    label: "Give me productivity tips", 
+    prompt: "Give me 5 practical productivity tips for software developers" 
+  },
+];
 
 // ================= REDUCER DEFINITION =================
 const initialState = {
@@ -134,7 +173,20 @@ const App = () => {
   const [editingId, setEditingId] = useState(null);
   const [editTitleInput, setEditTitleInput] = useState('');
   const [deleteTargetId, setDeleteTargetId] = useState(null);
+  const [darkMode, setDarkMode] = useState(() => {
+    return localStorage.getItem('mogo_theme') === 'dark';
+  });
+
   const messagesEndRef = useRef(null);
+
+  // Toggle Dark / Light Theme
+  const toggleTheme = useCallback(() => {
+    setDarkMode((prev) => {
+      const nextTheme = !prev;
+      localStorage.setItem('mogo_theme', nextTheme ? 'dark' : 'light');
+      return nextTheme;
+    });
+  }, []);
 
   // Auto-scroll chat window to bottom
   const scrollToBottom = useCallback(() => {
@@ -253,23 +305,23 @@ const App = () => {
   }, [deleteTargetId]);
 
   // Send Message Handler
-  const sendMessage = useCallback(async () => {
-    if (!state.input.trim() || state.loading) return;
+  const sendMessage = useCallback(async (customPrompt = null) => {
+    const promptToSend = typeof customPrompt === 'string' ? customPrompt : state.input.trim();
+    if (!promptToSend || state.loading) return;
 
-    const userPrompt = state.input.trim();
     const tempId = 'temp-' + Date.now();
-    const pendingMsg = { _id: Date.now(), userMessage: userPrompt, aiResponse: null };
+    const pendingMsg = { _id: Date.now(), userMessage: promptToSend, aiResponse: null };
 
     // 1. Dispatch optimistic UI update
     dispatch({
       type: 'OPTIMISTIC_ADD_MESSAGE',
-      payload: { tempId, pendingMsg, userPrompt },
+      payload: { tempId, pendingMsg, userPrompt: promptToSend },
     });
 
     try {
       // 2. Call backend API with prompt & optional chatId
       const response = await axios.post(`${API_BASE_URL}/api/chat/send`, {
-        message: userPrompt,
+        message: promptToSend,
         chatId: state.activeSessionId && !state.activeSessionId.startsWith('temp-') ? state.activeSessionId : null,
       });
 
@@ -296,23 +348,31 @@ const App = () => {
   );
 
   return (
-    <div className="flex h-screen w-screen overflow-hidden bg-[#f4f5f8] relative">
+    <div className={`flex h-screen w-screen overflow-hidden transition-colors duration-300 relative ${
+      darkMode ? 'bg-[#0a0a0f] text-gray-100' : 'bg-[#f5f4f9] text-gray-900'
+    }`}>
       
       {/* Custom Delete Confirmation Modal */}
       {deleteTargetId && (
-        <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/60 backdrop-blur-xs p-4">
-          <div className="bg-[#1c1c21] border border-gray-800 rounded-2xl p-5 sm:p-6 max-w-sm w-full text-center shadow-2xl space-y-4">
+        <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/65 backdrop-blur-xs p-4">
+          <div className={`border rounded-2xl p-5 sm:p-6 max-w-sm w-full text-center shadow-2xl space-y-4 ${
+            darkMode ? 'bg-[#181726] border-gray-800 text-white' : 'bg-white border-gray-100 text-gray-900'
+          }`}>
             <div className="w-12 h-12 rounded-full bg-red-500/10 text-red-500 mx-auto flex items-center justify-center">
               <Trash2 className="w-6 h-6" />
             </div>
             <div className="space-y-1">
-              <h3 className="text-base font-semibold text-white">Delete Chat</h3>
-              <p className="text-xs sm:text-sm text-gray-400">Do you want to delete the history or not?</p>
+              <h3 className="text-base font-semibold">Delete Chat</h3>
+              <p className={`text-xs sm:text-sm ${darkMode ? 'text-gray-400' : 'text-gray-500'}`}>
+                Do you want to delete the history or not?
+              </p>
             </div>
             <div className="flex items-center gap-3 pt-2">
               <button
                 onClick={() => setDeleteTargetId(null)}
-                className="flex-1 px-4 py-2.5 rounded-xl bg-[#2a2a30] hover:bg-[#32323a] text-gray-200 text-xs sm:text-sm font-medium transition cursor-pointer"
+                className={`flex-1 px-4 py-2.5 rounded-xl text-xs sm:text-sm font-medium transition cursor-pointer ${
+                  darkMode ? 'bg-[#262438] hover:bg-[#302d46] text-gray-300' : 'bg-gray-100 hover:bg-gray-200 text-gray-700'
+                }`}
               >
                 Cancel
               </button>
@@ -337,9 +397,9 @@ const App = () => {
 
       {/* ================= SIDEBAR (LEFT) ================= */}
       <aside 
-        className={`fixed inset-y-0 left-0 z-50 w-72 sm:w-64 bg-[#0d0d0f] text-gray-300 flex flex-col p-4 border-r border-gray-800/80 flex-shrink-0 transition-transform duration-300 ease-in-out md:static md:translate-x-0 ${
-          state.sidebarOpen ? 'translate-x-0' : '-translate-x-full'
-        }`}
+        className={`fixed inset-y-0 left-0 z-50 w-72 sm:w-64 flex flex-col p-4 border-r flex-shrink-0 transition-transform duration-300 ease-in-out md:static md:translate-x-0 ${
+          darkMode ? 'bg-[#0e0d16] border-gray-800/80 text-gray-300' : 'bg-[#0f0e17] border-gray-900 text-gray-300'
+        } ${state.sidebarOpen ? 'translate-x-0' : '-translate-x-full'}`}
       >
         
         {/* Mobile Close Button & Header */}
@@ -361,8 +421,8 @@ const App = () => {
           onClick={handleNewChat}
           className={`w-full flex items-center gap-3 px-3.5 py-2.5 rounded-xl font-medium text-[14px] transition cursor-pointer mb-4 ${
             state.activeSessionId === null
-              ? 'bg-[#222227] text-white shadow-sm border border-gray-700'
-              : 'hover:bg-[#1a1a1e] text-gray-300 bg-[#16161a]'
+              ? 'bg-[#242235] text-white shadow-sm border border-gray-700/80'
+              : 'hover:bg-[#1a1926] text-gray-300 bg-[#161522]'
           }`}
         >
           <SquarePen className="w-4 h-4 text-gray-200" />
@@ -385,8 +445,8 @@ const App = () => {
                     key={session._id}
                     className={`group relative w-full flex items-center justify-between px-3 py-2 rounded-xl text-[13.5px] font-normal transition text-left cursor-pointer ${
                       state.activeSessionId === session._id
-                        ? 'bg-[#222227] text-white font-medium shadow-sm'
-                        : 'text-gray-300 hover:bg-[#1a1a1e] hover:text-white'
+                        ? 'bg-[#242235] text-white font-medium shadow-sm'
+                        : 'text-gray-300 hover:bg-[#1a1926] hover:text-white'
                     }`}
                     onClick={() => handleSelectSession(session._id)}
                     title={titleText}
@@ -401,7 +461,7 @@ const App = () => {
                             if (e.key === 'Enter') handleSaveEdit(session._id, e);
                             if (e.key === 'Escape') setEditingId(null);
                           }}
-                          className="w-full bg-[#18181b] border border-gray-600 rounded px-2 py-0.5 text-xs text-white outline-none focus:border-purple-500"
+                          className="w-full bg-[#181726] border border-gray-600 rounded px-2 py-0.5 text-xs text-white outline-none focus:border-purple-500"
                           autoFocus
                         />
                         <button 
@@ -458,17 +518,23 @@ const App = () => {
       </aside>
 
       {/* ================= MAIN CHAT AREA (RIGHT) ================= */}
-      <main className="flex-1 flex items-center justify-center p-3 sm:p-6 h-full overflow-hidden">
+      <main className="flex-1 flex items-center justify-center p-2 sm:p-4 md:p-6 h-full overflow-hidden">
         
-        {/* Ask MOGO AI Modal Card */}
-        <div className="w-full max-w-[680px] bg-white rounded-2xl sm:rounded-[32px] p-4 sm:p-6 md:p-8 shadow-[0_12px_45px_rgba(0,0,0,0.06)] border border-gray-100/80 flex flex-col justify-between h-[92vh] max-h-[720px] md:h-[680px]">
+        {/* Ask MOGO AI Modal Container */}
+        <div className={`w-full max-w-[720px] rounded-2xl sm:rounded-[32px] p-4 sm:p-6 md:p-8 shadow-[0_15px_50px_rgba(0,0,0,0.08)] border flex flex-col justify-between h-[94vh] max-h-[760px] md:h-[700px] transition-colors duration-300 relative ${
+          darkMode 
+            ? 'bg-[#13121f] border-gray-800/80 text-white' 
+            : 'bg-gradient-to-b from-[#f3e8ff]/40 via-[#faf7ff] to-white border-purple-100/60 text-gray-900'
+        }`}>
           
-          {/* Header */}
-          <div className="flex items-center justify-between pb-2 border-b border-gray-50 md:border-none">
+          {/* Header Bar */}
+          <div className="flex items-center justify-between pb-3 border-b border-gray-200/20">
             <div className="flex items-center gap-2.5">
               {/* Mobile Hamburger Menu Toggle */}
               <button 
-                className="md:hidden text-[#1c1c1e] hover:bg-gray-100 p-1.5 rounded-lg transition"
+                className={`md:hidden p-1.5 rounded-lg transition ${
+                  darkMode ? 'text-gray-300 hover:bg-gray-800' : 'text-gray-700 hover:bg-purple-100/60'
+                }`}
                 onClick={() => dispatch({ type: 'TOGGLE_SIDEBAR' })}
                 title="Toggle History Sidebar"
               >
@@ -478,97 +544,206 @@ const App = () => {
               {/* MOGO 3D Avatar Logo */}
               <AILogo size="sm" />
 
-              <h2 className="text-[16px] sm:text-[17px] font-semibold text-[#1c1c1e] tracking-tight">
-                MOGO AI
+              <h2 className="text-[16px] sm:text-[17px] font-semibold tracking-tight flex items-center gap-1.5">
+                <span>MOGO AI</span>
               </h2>
             </div>
 
-            <button 
-              className="text-[#1c1c1e] hover:opacity-70 transition cursor-pointer p-1"
-              onClick={handleNewChat}
-              title="Start New Chat"
-            >
-              <X className="w-5 h-5 stroke-[2]" />
-            </button>
+            <div className="flex items-center gap-1 sm:gap-2">
+              {/* Dark / Light Theme Toggle */}
+              <button 
+                onClick={toggleTheme}
+                className={`p-2 rounded-full transition cursor-pointer ${
+                  darkMode 
+                    ? 'bg-[#222035] text-amber-400 hover:bg-[#2b2943]' 
+                    : 'bg-purple-100/80 text-purple-700 hover:bg-purple-200/80'
+                }`}
+                title={darkMode ? "Switch to Light Mode" : "Switch to Dark Mode"}
+              >
+                {darkMode ? <Sun className="w-4 h-4" /> : <Moon className="w-4 h-4" />}
+              </button>
+
+              {/* Start New Chat Cross Button */}
+              <button 
+                className={`p-2 rounded-full transition cursor-pointer ${
+                  darkMode ? 'hover:bg-gray-800 text-gray-400 hover:text-white' : 'hover:bg-gray-100 text-gray-500'
+                }`}
+                onClick={handleNewChat}
+                title="Start New Chat"
+              >
+                <X className="w-4 h-4 stroke-[2]" />
+              </button>
+            </div>
           </div>
 
-          {/* Chat Window */}
-          <div className="flex-1 overflow-y-auto py-3 space-y-4 pr-1 scrollbar-thin">
+          {/* Chat Window / Welcome State */}
+          <div className="flex-1 overflow-y-auto py-4 space-y-4 pr-1 scrollbar-thin">
             {currentMessages.length > 0 ? (
               currentMessages.map((msg, index) => (
                 <React.Fragment key={msg._id || index}>
                   {/* User Message Bubble */}
                   {msg.userMessage && (
                     <div className="flex justify-end">
-                      <div className="bg-[#ebf5ff] text-[#0076e8] px-4 py-3 sm:px-5 sm:py-3.5 rounded-[20px] sm:rounded-[22px] rounded-tr-[6px] max-w-[88%] sm:max-w-[86%] text-[14px] sm:text-[15px] leading-snug font-normal">
+                      <div className="bg-gradient-to-r from-[#8b5cf6] to-[#6d28d9] text-white px-4.5 py-3 sm:px-5 sm:py-3.5 rounded-[22px] rounded-tr-xs max-w-[88%] sm:max-w-[84%] text-[14px] sm:text-[15px] leading-snug font-normal shadow-sm">
                         {msg.userMessage}
                       </div>
                     </div>
                   )}
 
-                  {/* AI Message Bubble OR Typing Dots Indicator */}
+                  {/* AI Message Bubble OR Typing Indicator */}
                   {msg.aiResponse ? (
                     <div className="flex items-end gap-2.5 sm:gap-3">
-                      {/* MOGO Avatar */}
                       <AILogo size="md" />
                       
-                      <div className="bg-[#f2f3f6] text-[#1c1c1e] px-4 py-3.5 sm:px-5 sm:py-4 rounded-[20px] sm:rounded-[22px] rounded-bl-[6px] max-w-[88%] sm:max-w-[85%] text-[14px] sm:text-[15px] leading-normal font-normal">
+                      <div className={`px-4.5 py-3.5 sm:px-5 sm:py-4 rounded-[22px] rounded-bl-xs max-w-[88%] sm:max-w-[85%] text-[14px] sm:text-[15px] leading-normal font-normal ${
+                        darkMode 
+                          ? 'bg-[#1c1b2c] text-gray-100 border border-gray-800/60' 
+                          : 'bg-[#f3f2f8] text-gray-900 border border-gray-200/50'
+                      }`}>
                         {msg.aiResponse}
                       </div>
                     </div>
                   ) : (
-                    /* Animated Typing Indicator Dots while waiting for MOGO */
+                    /* Animated Typing Dots Indicator */
                     <div className="flex items-end gap-2.5 sm:gap-3">
                       <AILogo size="md" />
-                      <div className="bg-[#f2f3f6] text-gray-500 px-4 py-3.5 sm:px-5 sm:py-4 rounded-[20px] sm:rounded-[22px] rounded-bl-[6px] text-[14px] sm:text-[15px] flex items-center gap-1.5">
-                        <span className="w-2 h-2 bg-amber-400 rounded-full animate-bounce"></span>
-                        <span className="w-2 h-2 bg-amber-400 rounded-full animate-bounce [animation-delay:0.2s]"></span>
-                        <span className="w-2 h-2 bg-amber-400 rounded-full animate-bounce [animation-delay:0.4s]"></span>
+                      <div className={`px-4.5 py-3.5 sm:px-5 sm:py-4 rounded-[22px] rounded-bl-xs text-[14px] sm:text-[15px] flex items-center gap-1.5 ${
+                        darkMode ? 'bg-[#1c1b2c] text-gray-400' : 'bg-[#f3f2f8] text-gray-500'
+                      }`}>
+                        <span className="w-2 h-2 bg-purple-500 rounded-full animate-bounce"></span>
+                        <span className="w-2 h-2 bg-purple-500 rounded-full animate-bounce [animation-delay:0.2s]"></span>
+                        <span className="w-2 h-2 bg-blue-500 rounded-full animate-bounce [animation-delay:0.4s]"></span>
                       </div>
                     </div>
                   )}
                 </React.Fragment>
               ))
             ) : (
-              /* Empty state for New Chat */
-              <div className="h-full flex flex-col items-center justify-center text-gray-400 space-y-3">
-                <AILogo size="lg" />
-                <div className="text-center">
-                  <h3 className="text-base sm:text-lg font-semibold text-gray-800">Hi, my name is MOGO</h3>
-                  <p className="text-xs sm:text-sm font-medium text-gray-500 mt-1">How can I help you today?</p>
+              /* Beautiful Mockup-Matched Empty State Screen */
+              <div className="h-full flex flex-col items-center justify-center text-center px-2 py-4 space-y-6">
+                
+                {/* Avatar with Soft Glowing Halo */}
+                <div className="relative group">
+                  <div className="absolute -inset-1.5 rounded-full bg-gradient-to-tr from-purple-500 to-blue-500 opacity-40 blur-md group-hover:opacity-70 transition duration-500"></div>
+                  <div className="relative p-2 sm:p-2.5 rounded-3xl bg-[#181726] border border-purple-500/30 shadow-xl">
+                    <img src="/MOGO.png" alt="MOGO Avatar" className="w-16 h-16 sm:w-20 sm:h-20 object-contain drop-shadow-md" />
+                  </div>
                 </div>
+
+                {/* Title & Subtitle */}
+                <div className="space-y-1.5 max-w-sm">
+                  <h3 className="text-xl sm:text-2xl font-bold tracking-tight flex items-center justify-center gap-2">
+                    <span>Hi, I'm MOGO</span>
+                    <span className="animate-wave inline-block origin-bottom-right">👋</span>
+                  </h3>
+                  <p className={`text-xs sm:text-sm font-medium ${darkMode ? 'text-gray-400' : 'text-gray-500'}`}>
+                    How can I help you today?
+                  </p>
+                </div>
+
+                {/* Suggested Prompt Cards */}
+                <div className="w-full max-w-md grid grid-cols-1 sm:grid-cols-3 gap-2.5 pt-2">
+                  {SUGGESTED_PROMPTS.map((item) => {
+                    const IconComp = item.icon;
+                    return (
+                      <button
+                        key={item.id}
+                        onClick={() => sendMessage(item.prompt)}
+                        className={`flex flex-col items-center text-center p-3 rounded-2xl border transition-all duration-200 cursor-pointer text-xs font-medium space-y-2 hover:scale-[1.02] active:scale-95 ${
+                          darkMode 
+                            ? 'bg-[#1a1928] border-gray-800/80 hover:border-purple-500/50 text-gray-200' 
+                            : 'bg-white/80 backdrop-blur-xs border-purple-100 hover:border-purple-300 text-gray-700 shadow-sm'
+                        }`}
+                      >
+                        <div className="p-2 rounded-xl bg-purple-500/10 text-purple-500">
+                          <IconComp className="w-4 h-4" />
+                        </div>
+                        <span className="line-clamp-2 leading-tight">{item.label}</span>
+                      </button>
+                    );
+                  })}
+                </div>
+
               </div>
             )}
             <div ref={messagesEndRef} />
           </div>
 
-          {/* Input Bar */}
-          <div className="flex items-center gap-2 sm:gap-3 pt-2">
-            {/* Input Pill Container */}
-            <div className="flex-1 flex items-center bg-[#f2f3f6] rounded-full px-4 py-3 sm:px-5 sm:py-3.5 gap-2.5 focus-within:ring-2 focus-within:ring-purple-400/40 transition">
+          {/* Input Box Card (Matching Mockup Toolbar) */}
+          <div className="pt-2">
+            <div className={`rounded-3xl p-3 sm:p-4 border transition-all duration-300 space-y-2 ${
+              darkMode 
+                ? 'bg-[#1a1928] border-gray-800 focus-within:border-purple-500/60 shadow-lg' 
+                : 'bg-[#f8f7fc] border-purple-100/80 focus-within:border-purple-400/60 shadow-sm'
+            }`}>
+              
+              {/* Text Input Area */}
               <input
                 type="text"
                 placeholder="Ask MOGO anything..."
-                className="w-full bg-transparent outline-none text-[#1c1c1e] placeholder-[#8e8e93] text-[14px] sm:text-[15px]"
+                className={`w-full bg-transparent outline-none text-[14px] sm:text-[15px] px-1 ${
+                  darkMode ? 'text-white placeholder-[#787694]' : 'text-gray-900 placeholder-[#9b98b8]'
+                }`}
                 value={state.input}
                 onChange={handleInputChange}
                 onKeyDown={handleKeyDown}
               />
-            </div>
 
-            {/* Circular Arrow Up Send Button */}
-            <button 
-              className={`w-10 h-10 sm:w-12 sm:h-12 rounded-full flex items-center justify-center transition-all flex-shrink-0 cursor-pointer ${
-                state.input.trim() && !state.loading
-                  ? 'bg-gradient-to-tr from-[#9333EA] to-[#3B82F6] text-white shadow-md hover:scale-105 active:scale-95'
-                  : 'bg-[#f2f3f6] hover:bg-[#e4e5ea] text-[#8e8e93]'
-              }`} 
-              onClick={sendMessage}
-              disabled={!state.input.trim() || state.loading}
-              title="Send Message"
-            >
-              <ArrowUp className="w-4 h-4 sm:w-5 sm:h-5 stroke-[2.5]" />
-            </button>
+              {/* Bottom Actions Toolbar */}
+              <div className="flex items-center justify-between pt-1">
+                
+                {/* Left Side Action Icons (Attachment & Web Search) */}
+                <div className="flex items-center gap-1.5 sm:gap-2">
+                  <button 
+                    type="button"
+                    className={`p-1.5 sm:p-2 rounded-lg transition cursor-pointer ${
+                      darkMode ? 'text-gray-400 hover:text-gray-200 hover:bg-gray-800' : 'text-gray-500 hover:text-purple-600 hover:bg-purple-100/60'
+                    }`}
+                    title="Attach File"
+                  >
+                    <Paperclip className="w-4 h-4 sm:w-4.5 sm:h-4.5" />
+                  </button>
+
+                  <button 
+                    type="button"
+                    className={`p-1.5 sm:p-2 rounded-lg transition cursor-pointer flex items-center gap-1 text-xs font-medium ${
+                      darkMode ? 'text-gray-400 hover:text-gray-200 hover:bg-gray-800' : 'text-gray-500 hover:text-purple-600 hover:bg-purple-100/60'
+                    }`}
+                    title="Live Web Search Enabled"
+                  >
+                    <Globe className="w-4 h-4 sm:w-4.5 sm:h-4.5 text-purple-500" />
+                  </button>
+                </div>
+
+                {/* Right Side Actions (Mic & Circular Purple Send Button) */}
+                <div className="flex items-center gap-2">
+                  <button 
+                    type="button"
+                    className={`p-1.5 sm:p-2 rounded-lg transition cursor-pointer ${
+                      darkMode ? 'text-gray-400 hover:text-gray-200 hover:bg-gray-800' : 'text-gray-500 hover:text-purple-600 hover:bg-purple-100/60'
+                    }`}
+                    title="Voice Input"
+                  >
+                    <Mic className="w-4 h-4 sm:w-4.5 sm:h-4.5" />
+                  </button>
+
+                  <button 
+                    className={`w-9 h-9 sm:w-10 sm:h-10 rounded-full flex items-center justify-center transition-all flex-shrink-0 cursor-pointer ${
+                      state.input.trim() && !state.loading
+                        ? 'bg-gradient-to-r from-[#8b5cf6] to-[#7c3aed] text-white shadow-md shadow-purple-500/30 hover:scale-105 active:scale-95'
+                        : 'bg-purple-500/20 text-purple-400 opacity-60'
+                    }`} 
+                    onClick={() => sendMessage()}
+                    disabled={!state.input.trim() || state.loading}
+                    title="Send Message"
+                  >
+                    <Send className="w-4 h-4 stroke-[2.2] translate-x-0.5 -translate-y-0.5" />
+                  </button>
+                </div>
+
+              </div>
+
+            </div>
           </div>
 
         </div>
