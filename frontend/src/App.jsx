@@ -230,7 +230,7 @@ const App = () => {
   // Delete Chat Session Handler
   const handleDeleteSession = useCallback(async (sessionId, e) => {
     e.stopPropagation();
-    if (!window.confirm('Are you sure you want to delete this conversation?')) return;
+    if (!window.confirm('Do you want to delete the history or not?')) return;
 
     try {
       const res = await axios.delete(`${API_BASE_URL}/api/chat/${sessionId}`);
