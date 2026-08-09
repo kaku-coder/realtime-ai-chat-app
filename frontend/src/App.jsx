@@ -107,7 +107,7 @@ function chatReducer(state, action) {
   }
 }
 
-const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000';
+const API_BASE_URL = import.meta.env.VITE_API_URL || 'https://realtime-ai-chat-app1.onrender.com';
 
 const App = () => {
   const [state, dispatch] = useReducer(chatReducer, initialState);
