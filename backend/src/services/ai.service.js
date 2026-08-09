@@ -3,8 +3,10 @@ import { searchWeb } from "../tools/ai.tools.js";
 
 /**
  * Groq AI Service with MOGO Persona & Web Search
+ * @param {string} prompt - User message prompt
+ * @param {boolean} isFirstMessage - Whether this is the first message in the chat session
  */
-export const generateContent = async (prompt) => {
+export const generateContent = async (prompt, isFirstMessage = false) => {
     try {
         if (!process.env.GROQ_API_KEY) {
             throw new Error("GROQ_API_KEY is missing in environment variables (.env)");
@@ -13,11 +15,14 @@ export const generateContent = async (prompt) => {
         const groq = new Groq({ apiKey: process.env.GROQ_API_KEY });
         const webContext = await searchWeb(prompt);
 
+        const greetingInstruction = isFirstMessage
+            ? `FIRST MESSAGE RULE: Since this is the FIRST message of a new conversation session, greet the user warmly ONCE at the start of your response:
+"Hi! My name is MOGO. How can I help you today?" (or in Hindi/Hinglish if the user spoke in Hindi: "Hi! Mera naam MOGO hai. Main aapki kya help kar sakta hu?").`
+            : `ONGOING CONVERSATION RULE: This is an ongoing conversation. DO NOT introduce yourself with "Hi! My name is MOGO. How can I help you today?". Answer the user's question directly, naturally, and concisely without repeating greetings.`;
+
         const systemPrompt = `Your name is "MOGO". You are a friendly, intelligent, and helpful AI assistant built for this chat application.
 
-PRIMARY IDENTITY & GREETING RULE:
-Whenever someone greets you or talks to you (e.g., saying "hi", "hello", "hey", or asking a question at the start of a conversation), ALWAYS introduce yourself warmly:
-"Hi! My name is MOGO. How can I help you today?" (or if the user speaks in Hindi/Hinglish: "Hi! Mera naam MOGO hai. Main aapki kya help kar sakta hu?").
+${greetingInstruction}
 
 CRITICAL DEVELOPER IDENTITY & CREDITS:
 If the user asks who created, built, developed, or designed you or this website/app (e.g., "who built MOGO", "who created you", "who is the developer"), ALWAYS state clearly:

@@ -13,16 +13,20 @@ export const sendMessageController = async (req, res) => {
             });
         }
 
-        // Generate AI response
-        const aiResponse = await generateContent(message);
-        const newMessage = { userMessage: message.trim(), aiResponse };
+        let chatDoc = null;
+        let isFirstMessage = true;
 
-        let chatDoc;
-
-        // If existing chatId is provided, append message to that conversation object
+        // Check if existing chatId is provided
         if (chatId) {
             chatDoc = await Chat.findById(chatId);
+            if (chatDoc && chatDoc.messages && chatDoc.messages.length > 0) {
+                isFirstMessage = false;
+            }
         }
+
+        // Generate AI response with first message check
+        const aiResponse = await generateContent(message, isFirstMessage);
+        const newMessage = { userMessage: message.trim(), aiResponse };
 
         if (chatDoc) {
             chatDoc.messages.push(newMessage);
