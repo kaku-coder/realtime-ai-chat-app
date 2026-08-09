@@ -411,31 +411,36 @@ const App = () => {
           {/* Input Bar */}
           <div className="flex items-center gap-2 sm:gap-3 pt-2">
             {/* Input Pill Container */}
-            <div className="flex-1 flex items-center bg-[#f2f3f6] rounded-full px-4 py-3 sm:px-5 sm:py-3.5 gap-2">
+            <div className="flex-1 flex items-center bg-[#f2f3f6] rounded-full px-4 py-3 sm:px-5 sm:py-3.5 gap-2.5 focus-within:ring-2 focus-within:ring-purple-400/40 transition">
               <input
                 type="text"
-                placeholder="How else can I help"
+                placeholder="Ask Super AI anything..."
                 className="w-full bg-transparent outline-none text-[#1c1c1e] placeholder-[#8e8e93] text-[14px] sm:text-[15px]"
                 value={state.input}
                 onChange={handleInputChange}
                 onKeyDown={handleKeyDown}
               />
-              <button className="text-[#1c1c1e] hover:opacity-70 transition cursor-pointer flex-shrink-0">
+              <button 
+                type="button" 
+                className="text-[#1c1c1e] hover:opacity-70 transition cursor-pointer flex-shrink-0"
+                title="Voice Input"
+              >
                 <Mic className="w-4 h-4 sm:w-5 sm:h-5 stroke-[2]" />
               </button>
             </div>
 
             {/* Circular Arrow Up Send Button */}
             <button 
-              className={`w-10 h-10 sm:w-12 sm:h-12 rounded-full flex items-center justify-center transition flex-shrink-0 cursor-pointer ${
+              className={`w-10 h-10 sm:w-12 sm:h-12 rounded-full flex items-center justify-center transition-all flex-shrink-0 cursor-pointer ${
                 state.input.trim() && !state.loading
-                  ? 'bg-purple-600 hover:bg-purple-700 text-white shadow-md'
-                  : 'bg-[#f2f3f6] hover:bg-[#e4e5ea] text-[#1c1c1e]'
+                  ? 'bg-gradient-to-tr from-[#9333EA] to-[#3B82F6] text-white shadow-md hover:scale-105 active:scale-95'
+                  : 'bg-[#f2f3f6] hover:bg-[#e4e5ea] text-[#8e8e93]'
               }`} 
               onClick={sendMessage}
               disabled={!state.input.trim() || state.loading}
+              title="Send Message"
             >
-              <ArrowUp className="w-4 h-4 sm:w-5 sm:h-5 stroke-[2]" />
+              <ArrowUp className="w-4 h-4 sm:w-5 sm:h-5 stroke-[2.5]" />
             </button>
           </div>
 
