@@ -3,9 +3,10 @@ import React, {
   useEffect, 
   useRef, 
   useCallback, 
-  useMemo 
+  useMemo,
+  useState
 } from 'react';
-import { X, ArrowUp, SquarePen, MessageSquare, Menu } from 'lucide-react';
+import { X, ArrowUp, SquarePen, MessageSquare, Menu, Pencil, Trash2, Check } from 'lucide-react';
 import axios from 'axios';
 
 // Custom MOGO 3D Robot Avatar Component
@@ -51,6 +52,25 @@ function chatReducer(state, action) {
 
     case 'START_NEW_CHAT':
       return { ...state, activeSessionId: null, input: '', sidebarOpen: false };
+
+    case 'RENAME_SESSION': {
+      const { id, title } = action.payload;
+      const updatedSessions = state.sessions.map((s) =>
+        s._id === id ? { ...s, title } : s
+      );
+      return { ...state, sessions: updatedSessions };
+    }
+
+    case 'DELETE_SESSION': {
+      const { id } = action.payload;
+      const filteredSessions = state.sessions.filter((s) => s._id !== id);
+      const newActiveId = state.activeSessionId === id ? null : state.activeSessionId;
+      return {
+        ...state,
+        sessions: filteredSessions,
+        activeSessionId: newActiveId,
+      };
+    }
 
     case 'OPTIMISTIC_ADD_MESSAGE': {
       const { tempId, pendingMsg, userPrompt } = action.payload;
@@ -111,6 +131,8 @@ const API_BASE_URL = import.meta.env.VITE_API_URL || 'https://realtime-ai-chat-a
 
 const App = () => {
   const [state, dispatch] = useReducer(chatReducer, initialState);
+  const [editingId, setEditingId] = useState(null);
+  const [editTitleInput, setEditTitleInput] = useState('');
   const messagesEndRef = useRef(null);
 
   // Auto-scroll chat window to bottom
@@ -175,6 +197,52 @@ const App = () => {
   // Select session handler
   const handleSelectSession = useCallback((sessionId) => {
     dispatch({ type: 'SET_ACTIVE_SESSION', payload: sessionId });
+  }, []);
+
+  // Start Editing Chat Title Handler
+  const handleStartEdit = useCallback((session, e) => {
+    e.stopPropagation();
+    setEditingId(session._id);
+    setEditTitleInput(session.title || getSessionTitle(session));
+  }, [getSessionTitle]);
+
+  // Save Renamed Title Handler
+  const handleSaveEdit = useCallback(async (sessionId, e) => {
+    if (e) e.stopPropagation();
+    if (!editTitleInput.trim()) return;
+
+    try {
+      const res = await axios.put(`${API_BASE_URL}/api/chat/${sessionId}/title`, {
+        title: editTitleInput.trim(),
+      });
+      if (res.data.success) {
+        dispatch({
+          type: 'RENAME_SESSION',
+          payload: { id: sessionId, title: res.data.data.title },
+        });
+      }
+    } catch (err) {
+      console.error('Error renaming chat title:', err);
+    }
+    setEditingId(null);
+  }, [editTitleInput]);
+
+  // Delete Chat Session Handler
+  const handleDeleteSession = useCallback(async (sessionId, e) => {
+    e.stopPropagation();
+    if (!window.confirm('Are you sure you want to delete this conversation?')) return;
+
+    try {
+      const res = await axios.delete(`${API_BASE_URL}/api/chat/${sessionId}`);
+      if (res.data.success) {
+        dispatch({
+          type: 'DELETE_SESSION',
+          payload: { id: sessionId },
+        });
+      }
+    } catch (err) {
+      console.error('Error deleting chat session:', err);
+    }
   }, []);
 
   // Send Message Handler
@@ -277,19 +345,70 @@ const App = () => {
               state.sessions.map((session) => {
                 const titleText = getSessionTitle(session);
                 return (
-                  <button
+                  <div
                     key={session._id}
-                    onClick={() => handleSelectSession(session._id)}
-                    className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-[13.5px] font-normal transition text-left cursor-pointer truncate ${
+                    className={`group relative w-full flex items-center justify-between px-3 py-2 rounded-xl text-[13.5px] font-normal transition text-left cursor-pointer ${
                       state.activeSessionId === session._id
                         ? 'bg-[#222227] text-white font-medium shadow-sm'
                         : 'text-gray-300 hover:bg-[#1a1a1e] hover:text-white'
                     }`}
+                    onClick={() => handleSelectSession(session._id)}
                     title={titleText}
                   >
-                    <MessageSquare className="w-4 h-4 text-gray-400 flex-shrink-0" />
-                    <span className="truncate">{titleText}</span>
-                  </button>
+                    {editingId === session._id ? (
+                      <div className="flex items-center gap-1.5 w-full" onClick={(e) => e.stopPropagation()}>
+                        <input
+                          type="text"
+                          value={editTitleInput}
+                          onChange={(e) => setEditTitleInput(e.target.value)}
+                          onKeyDown={(e) => {
+                            if (e.key === 'Enter') handleSaveEdit(session._id, e);
+                            if (e.key === 'Escape') setEditingId(null);
+                          }}
+                          className="w-full bg-[#18181b] border border-gray-600 rounded px-2 py-0.5 text-xs text-white outline-none focus:border-purple-500"
+                          autoFocus
+                        />
+                        <button 
+                          onClick={(e) => handleSaveEdit(session._id, e)} 
+                          className="p-1 hover:text-green-400 text-gray-300 transition"
+                          title="Save Title"
+                        >
+                          <Check className="w-3.5 h-3.5" />
+                        </button>
+                        <button 
+                          onClick={(e) => { e.stopPropagation(); setEditingId(null); }} 
+                          className="p-1 hover:text-red-400 text-gray-400 transition"
+                          title="Cancel"
+                        >
+                          <X className="w-3.5 h-3.5" />
+                        </button>
+                      </div>
+                    ) : (
+                      <>
+                        <div className="flex items-center gap-2.5 min-w-0 flex-1 pr-2">
+                          <MessageSquare className="w-4 h-4 text-gray-400 flex-shrink-0" />
+                          <span className="truncate">{titleText}</span>
+                        </div>
+                        {/* Edit & Delete Action Buttons (visible on hover) */}
+                        <div className="hidden group-hover:flex items-center gap-1 flex-shrink-0">
+                          <button
+                            onClick={(e) => handleStartEdit(session, e)}
+                            className="p-1 hover:text-white text-gray-400 hover:bg-gray-700/60 rounded transition"
+                            title="Edit Title"
+                          >
+                            <Pencil className="w-3.5 h-3.5" />
+                          </button>
+                          <button
+                            onClick={(e) => handleDeleteSession(session._id, e)}
+                            className="p-1 hover:text-red-400 text-gray-400 hover:bg-gray-700/60 rounded transition"
+                            title="Delete Chat"
+                          >
+                            <Trash2 className="w-3.5 h-3.5" />
+                          </button>
+                        </div>
+                      </>
+                    )}
+                  </div>
                 );
               })
             ) : (

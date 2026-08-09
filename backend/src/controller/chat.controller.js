@@ -85,3 +85,47 @@ export const getChatHistoryController = async (req, res) => {
         });
     }
 };
+
+// Controller to rename chat title
+export const updateChatTitleController = async (req, res) => {
+    try {
+        const { id } = req.params;
+        const { title } = req.body;
+
+        if (!title || title.trim() === "") {
+            return res.status(400).json({ success: false, message: "New title is required" });
+        }
+
+        const updatedChat = await Chat.findByIdAndUpdate(
+            id,
+            { title: title.trim() },
+            { new: true }
+        );
+
+        if (!updatedChat) {
+            return res.status(404).json({ success: false, message: "Chat session not found" });
+        }
+
+        return res.status(200).json({ success: true, data: updatedChat });
+    } catch (error) {
+        console.error("UpdateChatTitle Error:", error);
+        return res.status(500).json({ success: false, message: "Failed to update chat title" });
+    }
+};
+
+// Controller to delete chat session
+export const deleteChatController = async (req, res) => {
+    try {
+        const { id } = req.params;
+        const deletedChat = await Chat.findByIdAndDelete(id);
+
+        if (!deletedChat) {
+            return res.status(404).json({ success: false, message: "Chat session not found" });
+        }
+
+        return res.status(200).json({ success: true, message: "Chat deleted successfully", id });
+    } catch (error) {
+        console.error("DeleteChat Error:", error);
+        return res.status(500).json({ success: false, message: "Failed to delete chat" });
+    }
+};
