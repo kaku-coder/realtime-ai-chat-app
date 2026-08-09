@@ -5,7 +5,7 @@ import React, {
   useCallback, 
   useMemo 
 } from 'react';
-import { X, Mic, ArrowUp, SquarePen, MessageSquare } from 'lucide-react';
+import { X, Mic, ArrowUp, SquarePen, MessageSquare, Menu } from 'lucide-react';
 import axios from 'axios';
 
 // ================= REDUCER DEFINITION =================
@@ -14,6 +14,7 @@ const initialState = {
   sessions: [],
   activeSessionId: null,
   loading: false,
+  sidebarOpen: false,
 };
 
 function chatReducer(state, action) {
@@ -25,10 +26,16 @@ function chatReducer(state, action) {
       return { ...state, sessions: action.payload };
 
     case 'SET_ACTIVE_SESSION':
-      return { ...state, activeSessionId: action.payload };
+      return { ...state, activeSessionId: action.payload, sidebarOpen: false };
+
+    case 'TOGGLE_SIDEBAR':
+      return { ...state, sidebarOpen: !state.sidebarOpen };
+
+    case 'CLOSE_SIDEBAR':
+      return { ...state, sidebarOpen: false };
 
     case 'START_NEW_CHAT':
-      return { ...state, activeSessionId: null, input: '' };
+      return { ...state, activeSessionId: null, input: '', sidebarOpen: false };
 
     case 'OPTIMISTIC_ADD_MESSAGE': {
       const { tempId, pendingMsg, userPrompt } = action.payload;
@@ -197,11 +204,34 @@ const App = () => {
   );
 
   return (
-    <div className="flex h-screen w-screen overflow-hidden bg-[#f4f5f8]">
+    <div className="flex h-screen w-screen overflow-hidden bg-[#f4f5f8] relative">
       
+      {/* Mobile Backdrop Overlay */}
+      {state.sidebarOpen && (
+        <div 
+          className="fixed inset-0 bg-black/60 z-40 md:hidden backdrop-blur-xs transition-opacity"
+          onClick={() => dispatch({ type: 'CLOSE_SIDEBAR' })}
+        />
+      )}
+
       {/* ================= SIDEBAR (LEFT) ================= */}
-      <aside className="w-64 bg-[#0d0d0f] text-gray-300 flex flex-col p-4 border-r border-gray-800/80 flex-shrink-0">
+      <aside 
+        className={`fixed inset-y-0 left-0 z-50 w-72 sm:w-64 bg-[#0d0d0f] text-gray-300 flex flex-col p-4 border-r border-gray-800/80 flex-shrink-0 transition-transform duration-300 ease-in-out md:static md:translate-x-0 ${
+          state.sidebarOpen ? 'translate-x-0' : '-translate-x-full'
+        }`}
+      >
         
+        {/* Mobile Close Button & Header */}
+        <div className="flex items-center justify-between md:hidden mb-3 pb-2 border-b border-gray-800">
+          <span className="text-sm font-semibold text-gray-200">Chat History</span>
+          <button 
+            onClick={() => dispatch({ type: 'CLOSE_SIDEBAR' })}
+            className="p-1 text-gray-400 hover:text-white"
+          >
+            <X className="w-5 h-5" />
+          </button>
+        </div>
+
         {/* New Chat Button */}
         <button
           onClick={handleNewChat}
@@ -253,16 +283,27 @@ const App = () => {
       </aside>
 
       {/* ================= MAIN CHAT AREA (RIGHT) ================= */}
-      <main className="flex-1 flex items-center justify-center p-6 h-full overflow-hidden">
+      <main className="flex-1 flex items-center justify-center p-3 sm:p-6 h-full overflow-hidden">
         
         {/* Ask Super AI Modal Card */}
-        <div className="w-full max-w-[680px] bg-white rounded-[32px] p-8 shadow-[0_12px_45px_rgba(0,0,0,0.06)] border border-gray-100/80 flex flex-col justify-between h-[680px]">
+        <div className="w-full max-w-[680px] bg-white rounded-2xl sm:rounded-[32px] p-4 sm:p-6 md:p-8 shadow-[0_12px_45px_rgba(0,0,0,0.06)] border border-gray-100/80 flex flex-col justify-between h-[92vh] max-h-[720px] md:h-[680px]">
           
           {/* Header */}
-          <div className="flex items-center justify-between pb-2">
-            <h2 className="text-[17px] font-semibold text-[#1c1c1e] tracking-tight">
-              Ask Super AI
-            </h2>
+          <div className="flex items-center justify-between pb-2 border-b border-gray-50 md:border-none">
+            <div className="flex items-center gap-2">
+              {/* Mobile Hamburger Menu Toggle */}
+              <button 
+                className="md:hidden text-[#1c1c1e] hover:bg-gray-100 p-1.5 rounded-lg transition"
+                onClick={() => dispatch({ type: 'TOGGLE_SIDEBAR' })}
+                title="Toggle History Sidebar"
+              >
+                <Menu className="w-5 h-5 stroke-[2]" />
+              </button>
+              <h2 className="text-[16px] sm:text-[17px] font-semibold text-[#1c1c1e] tracking-tight">
+                Ask Super AI
+              </h2>
+            </div>
+
             <button 
               className="text-[#1c1c1e] hover:opacity-70 transition cursor-pointer p-1"
               onClick={handleNewChat}
@@ -280,7 +321,7 @@ const App = () => {
                   {/* User Message Bubble */}
                   {msg.userMessage && (
                     <div className="flex justify-end">
-                      <div className="bg-[#ebf5ff] text-[#0076e8] px-5 py-3.5 rounded-[22px] rounded-tr-[6px] max-w-[86%] text-[15px] leading-snug font-normal">
+                      <div className="bg-[#ebf5ff] text-[#0076e8] px-4 py-3 sm:px-5 sm:py-3.5 rounded-[20px] sm:rounded-[22px] rounded-tr-[6px] max-w-[88%] sm:max-w-[86%] text-[14px] sm:text-[15px] leading-snug font-normal">
                         {msg.userMessage}
                       </div>
                     </div>
@@ -288,19 +329,19 @@ const App = () => {
 
                   {/* AI Message Bubble OR Typing Dots Indicator */}
                   {msg.aiResponse ? (
-                    <div className="flex items-end gap-3">
+                    <div className="flex items-end gap-2.5 sm:gap-3">
                       {/* Glossy Blue Gradient Sphere Avatar */}
-                      <div className="w-8 h-8 rounded-full bg-gradient-to-tr from-[#1d4ed8] via-[#3b82f6] to-[#93c5fd] shadow-sm flex-shrink-0 mb-1" />
+                      <div className="w-7 h-7 sm:w-8 sm:h-8 rounded-full bg-gradient-to-tr from-[#1d4ed8] via-[#3b82f6] to-[#93c5fd] shadow-sm flex-shrink-0 mb-1" />
                       
-                      <div className="bg-[#f2f3f6] text-[#1c1c1e] px-5 py-4 rounded-[22px] rounded-bl-[6px] max-w-[85%] text-[15px] leading-normal font-normal">
+                      <div className="bg-[#f2f3f6] text-[#1c1c1e] px-4 py-3.5 sm:px-5 sm:py-4 rounded-[20px] sm:rounded-[22px] rounded-bl-[6px] max-w-[88%] sm:max-w-[85%] text-[14px] sm:text-[15px] leading-normal font-normal">
                         {msg.aiResponse}
                       </div>
                     </div>
                   ) : (
                     /* Animated Typing Indicator Dots while waiting for AI */
-                    <div className="flex items-end gap-3">
-                      <div className="w-8 h-8 rounded-full bg-gradient-to-tr from-[#1d4ed8] via-[#3b82f6] to-[#93c5fd] shadow-sm flex-shrink-0 mb-1 animate-pulse" />
-                      <div className="bg-[#f2f3f6] text-gray-500 px-5 py-4 rounded-[22px] rounded-bl-[6px] text-[15px] flex items-center gap-1.5">
+                    <div className="flex items-end gap-2.5 sm:gap-3">
+                      <div className="w-7 h-7 sm:w-8 sm:h-8 rounded-full bg-gradient-to-tr from-[#1d4ed8] via-[#3b82f6] to-[#93c5fd] shadow-sm flex-shrink-0 mb-1 animate-pulse" />
+                      <div className="bg-[#f2f3f6] text-gray-500 px-4 py-3.5 sm:px-5 sm:py-4 rounded-[20px] sm:rounded-[22px] rounded-bl-[6px] text-[14px] sm:text-[15px] flex items-center gap-1.5">
                         <span className="w-2 h-2 bg-blue-500 rounded-full animate-bounce"></span>
                         <span className="w-2 h-2 bg-blue-500 rounded-full animate-bounce [animation-delay:0.2s]"></span>
                         <span className="w-2 h-2 bg-blue-500 rounded-full animate-bounce [animation-delay:0.4s]"></span>
@@ -312,35 +353,35 @@ const App = () => {
             ) : (
               /* Empty state for New Chat */
               <div className="h-full flex flex-col items-center justify-center text-gray-400 space-y-2">
-                <div className="w-12 h-12 rounded-full bg-gradient-to-tr from-[#1d4ed8] via-[#3b82f6] to-[#93c5fd] shadow-md flex items-center justify-center text-white text-lg font-bold">
+                <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-full bg-gradient-to-tr from-[#1d4ed8] via-[#3b82f6] to-[#93c5fd] shadow-md flex items-center justify-center text-white text-base sm:text-lg font-bold">
                   AI
                 </div>
-                <p className="text-sm font-medium text-gray-500">Start a new conversation</p>
+                <p className="text-xs sm:text-sm font-medium text-gray-500">Start a new conversation</p>
               </div>
             )}
             <div ref={messagesEndRef} />
           </div>
 
           {/* Input Bar */}
-          <div className="flex items-center gap-3 pt-2">
+          <div className="flex items-center gap-2 sm:gap-3 pt-2">
             {/* Input Pill Container */}
-            <div className="flex-1 flex items-center bg-[#f2f3f6] rounded-full px-5 py-3.5 gap-2">
+            <div className="flex-1 flex items-center bg-[#f2f3f6] rounded-full px-4 py-3 sm:px-5 sm:py-3.5 gap-2">
               <input
                 type="text"
                 placeholder="How else can I help"
-                className="w-full bg-transparent outline-none text-[#1c1c1e] placeholder-[#8e8e93] text-[15px]"
+                className="w-full bg-transparent outline-none text-[#1c1c1e] placeholder-[#8e8e93] text-[14px] sm:text-[15px]"
                 value={state.input}
                 onChange={handleInputChange}
                 onKeyDown={handleKeyDown}
               />
               <button className="text-[#1c1c1e] hover:opacity-70 transition cursor-pointer flex-shrink-0">
-                <Mic className="w-5 h-5 stroke-[2]" />
+                <Mic className="w-4 h-4 sm:w-5 sm:h-5 stroke-[2]" />
               </button>
             </div>
 
             {/* Circular Arrow Up Send Button */}
             <button 
-              className={`w-12 h-12 rounded-full flex items-center justify-center transition flex-shrink-0 cursor-pointer ${
+              className={`w-10 h-10 sm:w-12 sm:h-12 rounded-full flex items-center justify-center transition flex-shrink-0 cursor-pointer ${
                 state.input.trim() && !state.loading
                   ? 'bg-blue-600 hover:bg-blue-700 text-white shadow-md'
                   : 'bg-[#f2f3f6] hover:bg-[#e4e5ea] text-[#1c1c1e]'
@@ -348,7 +389,7 @@ const App = () => {
               onClick={sendMessage}
               disabled={!state.input.trim() || state.loading}
             >
-              <ArrowUp className="w-5 h-5 stroke-[2]" />
+              <ArrowUp className="w-4 h-4 sm:w-5 sm:h-5 stroke-[2]" />
             </button>
           </div>
 
