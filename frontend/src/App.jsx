@@ -5,7 +5,7 @@ import React, {
   useCallback, 
   useMemo 
 } from 'react';
-import { X, Mic, ArrowUp, SquarePen, MessageSquare, Menu } from 'lucide-react';
+import { X, ArrowUp, SquarePen, MessageSquare, Menu } from 'lucide-react';
 import axios from 'axios';
 
 // Custom MOGO 3D Robot Avatar Component
@@ -399,13 +399,6 @@ const App = () => {
                 onChange={handleInputChange}
                 onKeyDown={handleKeyDown}
               />
-              <button 
-                type="button" 
-                className="text-[#1c1c1e] hover:opacity-70 transition cursor-pointer flex-shrink-0"
-                title="Voice Input"
-              >
-                <Mic className="w-4 h-4 sm:w-5 sm:h-5 stroke-[2]" />
-              </button>
             </div>
 
             {/* Circular Arrow Up Send Button */}
